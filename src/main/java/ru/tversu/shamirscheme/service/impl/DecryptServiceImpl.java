@@ -13,13 +13,16 @@ import ru.tversu.shamirscheme.service.DecryptService;
 import ru.tversu.shamirscheme.service.FileManager;
 import ru.tversu.shamirscheme.utils.Utils;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class DecryptServiceImpl implements DecryptService {
 
-    public static final Integer K=4;
+    public static final Integer K = 4;
 
     private final FileManager fileManager;
 
@@ -43,27 +46,15 @@ public class DecryptServiceImpl implements DecryptService {
         if (!Utils.isSimple(secretParts.get(0).getP())) {
             throw new NotSimpleDigitException("Параметр p не является простым числом");
         }
-        Integer secret = 0;
-        Integer l;
-        for (int i = 0; i < K; i++) {
-            l = 1;
-            for (int j = 0; j < K; j++) {
-                if (j == i) {
-                    continue;
-                }
-                int numerator = (((secretParts.get(i).getPoint() - secretParts.get(j).getPoint()) % p + p) % p);
-                l = ((l * (((-secretParts.get(j).getPoint() % p + p) % p)
-                        * getOpposite(numerator, p) % p) % p) % p);
-            }
-            secret = (secret + ((l * secretParts.get(i).getValue()) % p) % p);
-        }
+        List<Integer> polynomialCoefficients = recoverPolynomialCoefficients(secretParts);
+
         Secret result = Secret
                 .builder()
-                .secret(secret % p)
+                .secret(polynomialCoefficients.get(0) % p)
                 .p(p)
                 .build();
 
-        log.debug("Восстановлен ключ: {}", secret);
+        log.debug("Восстановлен ключ: {}", result);
         if (!fileManager.checkIfSecretExists(result)) {
             throw new SecretNotExistException("Восстановленного секрета не существует", result);
         }
@@ -71,25 +62,51 @@ public class DecryptServiceImpl implements DecryptService {
     }
 
     @Override
-    public List<Integer> getPolynomialCoefficients(List<SecretPart> secretParts) {
+    public List<Integer> recoverPolynomialCoefficients(List<SecretPart> secretParts) {
+
+        List<Integer> polynomialCoffs = Arrays.asList(0, 0, 0, 0);
+        List<Integer> points = secretParts.stream().map(SecretPart::getPoint).limit(K).toList();
         Integer p = secretParts.get(0).getP();
-        Integer secret = 0;
-        Integer l;
-        Integer x1;
-        Integer x2;
-        Integer x3;
+
         for (int i = 0; i < K; i++) {
-            l = 1;
+            List<Integer> liCoffs = findLiCoffs(i, points, p);
             for (int j = 0; j < K; j++) {
-                if (j == i) {
-                    continue;
-                }
-                int numerator = (((secretParts.get(i).getPoint() - secretParts.get(j).getPoint()) % p + p) % p);
-                l = ((l * (((-secretParts.get(j).getPoint() % p + p) % p)
-                        * getOpposite(numerator, p) % p) % p) % p);
+                liCoffs.set(j, ((liCoffs.get(j) * secretParts.get(i).getValue()) % p));
+                polynomialCoffs.set(j, (polynomialCoffs.get(j) + liCoffs.get(j)) % p);
             }
         }
-        return null;
+        log.debug("Восстановлены коэффициенты полинома: {}", polynomialCoffs);
+        return polynomialCoffs;
+    }
+
+
+    private List<Integer> findLiCoffs(int i, List<Integer> points, int p) {
+        List<Integer> numerator = Arrays.asList(1, 0, 0, 1);
+        Integer denominator = 1;
+        for (Integer point : points) {
+            if (!Objects.equals(point, points.get(i))) {
+                denominator *= (points.get(i) - point);
+                numerator.set(0, numerator.get(0) * (-point));
+                numerator.set(2, numerator.get(2) - point);
+            }
+        }
+        switch (i) {
+            case 0 -> numerator.set(1, (((((-points.get(1)) + (-points.get(2))) * (-points.get(3)))
+                    + ((-points.get(1)) * (-points.get(2)))) % p + p) % p);
+            case 1 -> numerator.set(1, (((((-points.get(0)) + (-points.get(2))) * (-points.get(3)))
+                    + ((-points.get(0)) * (-points.get(2)))) % p + p) % p);
+            case 2 -> numerator.set(1, (((((-points.get(0)) + (-points.get(1))) * (-points.get(3)))
+                    + ((-points.get(0)) * (-points.get(1)))) % p + p) % p);
+            case 3 -> numerator.set(1, (((((-points.get(0)) + (-points.get(1))) * (-points.get(2)))
+                    + ((-points.get(0)) * (-points.get(1)))) % p + p) % p);
+        }
+        final Integer finalDenominator = getOpposite(denominator, p);
+
+        numerator = numerator.stream()
+                .map(x -> ((((x % p) + p) % p) * finalDenominator) % p)
+                .collect(Collectors.toList());
+
+        return numerator;
     }
 
     private int getOpposite(int x, int p) {

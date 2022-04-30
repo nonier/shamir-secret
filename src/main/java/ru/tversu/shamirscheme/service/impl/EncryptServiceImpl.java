@@ -62,7 +62,7 @@ public class EncryptServiceImpl implements EncryptService {
     }
 
     private List<SecretPart> generateSecretParts(Secret secret, List<Integer> secretPartsPoints) {
-        LinkedList<Integer> functionParams = new LinkedList<>();
+        LinkedList<Integer> polynomialCoffs = new LinkedList<>();
 
         int p = secret.getP();
         for (int i = 0; i < K - 1; i++) {
@@ -70,8 +70,9 @@ public class EncryptServiceImpl implements EncryptService {
             while (param == 0) {
                 param = GENERATOR.nextInt(1000) % p;
             }
-            functionParams.add(param);
+            polynomialCoffs.add(param);
         }
+        log.debug("Сгенерированы коэффициенты полинома: {}", polynomialCoffs);
 
         List<Integer> partPoints = new ArrayList<>();
 
@@ -88,7 +89,7 @@ public class EncryptServiceImpl implements EncryptService {
         return partPoints.stream().map(partPoint ->
                         SecretPart.builder()
                                 .point(partPoint)
-                                .value(getValue(partPoint, secret, functionParams))
+                                .value(getValue(partPoint, secret, polynomialCoffs))
                                 .p(p)
                                 .build()
                 )

@@ -10,4 +10,8 @@ public class Utils {
         }
         return true;
     }
+
+    public static int minusMod(int x, int p) {
+        return (x % p + p) % p;
+    }
 }
