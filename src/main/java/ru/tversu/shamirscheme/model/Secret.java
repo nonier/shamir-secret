@@ -11,6 +11,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Secret {
     private Integer secret;
-    private Integer partsCount;
     private Integer p;
 }

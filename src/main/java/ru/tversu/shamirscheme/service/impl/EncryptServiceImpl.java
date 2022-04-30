@@ -13,6 +13,7 @@ import ru.tversu.shamirscheme.service.FileManager;
 import ru.tversu.shamirscheme.utils.Utils;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -33,7 +34,7 @@ public class EncryptServiceImpl implements EncryptService {
 
 
     @Override
-    public List<SecretPart> encrypt(Secret secret) throws Exception {
+    public List<SecretPart> encrypt(Secret secret, Integer partsCount) throws Exception {
         log.debug("Попытка зашифровать секрет: {}", secret);
 
         if (secret.getSecret() >= secret.getP()) {
@@ -45,7 +46,9 @@ public class EncryptServiceImpl implements EncryptService {
         if (fileManager.checkIfSecretExists(secret)) {
             throw new SecretAlreadyExistsException("Невозможно создать части секрета, такой секрет уже существует");
         }
-        List<SecretPart> result = generateSecretParts(secret, new ArrayList<>());
+        List<Integer> polynomialCoffs = new ArrayList<>();
+        polynomialCoffs.add(secret.getSecret());
+        List<SecretPart> result = generateSecretParts(secret.getP(), polynomialCoffs, partsCount, new ArrayList<>());
 
         log.debug("Получены части ключа: {}", result);
         fileManager.writeSecret(secret, result);
@@ -54,32 +57,31 @@ public class EncryptServiceImpl implements EncryptService {
 
     @Override
     public List<SecretPart> generateNewParts(List<SecretPart> secretParts, Integer partsCount) throws Exception {
-        Secret secret = decryptService.decrypt(secretParts);
-        secret.setPartsCount(partsCount);
-        List<SecretPart> result = generateSecretParts(secret, fileManager.getSecretPartsPoints(secret));
-        fileManager.writeSecret(secret, result);
-        return result;
+        List<Integer> recoveredPolynomialCoffs = decryptService.recoverPolynomialCoefficients(secretParts);
+        List<Integer> points = secretParts.stream().map(SecretPart::getPoint).toList();
+        List<SecretPart> newSecretParts = generateSecretParts(secretParts.get(0).getP(), recoveredPolynomialCoffs, partsCount, points);
+        return newSecretParts;
     }
 
-    private List<SecretPart> generateSecretParts(Secret secret, List<Integer> secretPartsPoints) {
-        LinkedList<Integer> polynomialCoffs = new LinkedList<>();
+    private List<SecretPart> generateSecretParts(Integer p, List<Integer> polynomialCoffs, Integer partsCount, List<Integer> points) {
 
-        int p = secret.getP();
-        for (int i = 0; i < K - 1; i++) {
-            int param = GENERATOR.nextInt(1000) % p;
-            while (param == 0) {
-                param = GENERATOR.nextInt(1000) % p;
+        if (polynomialCoffs.size() == 1) {
+            for (int i = 0; i < K - 1; i++) {
+                int param = GENERATOR.nextInt(1000) % p;
+                while (param == 0) {
+                    param = GENERATOR.nextInt(1000) % p;
+                }
+                polynomialCoffs.add(param);
             }
-            polynomialCoffs.add(param);
         }
         log.debug("Сгенерированы коэффициенты полинома: {}", polynomialCoffs);
 
         List<Integer> partPoints = new ArrayList<>();
 
-        for (int i = 0; i < secret.getPartsCount(); i++) {
+        for (int i = 0; i < partsCount; i++) {
             int partPoint = GENERATOR.nextInt(1000) % p;
             while (partPoints.contains(partPoint) ||
-                    secretPartsPoints.contains(partPoint) ||
+                    points.contains(partPoint) ||
                     partPoint == 0) {
                 partPoint = GENERATOR.nextInt(1000) % p;
             }
@@ -89,22 +91,21 @@ public class EncryptServiceImpl implements EncryptService {
         return partPoints.stream().map(partPoint ->
                         SecretPart.builder()
                                 .point(partPoint)
-                                .value(getValue(partPoint, secret, polynomialCoffs))
+                                .value(getValue(partPoint, p, polynomialCoffs))
                                 .p(p)
                                 .build()
                 )
                 .toList();
     }
 
-    private Integer getValue(int partPoint, Secret secret, List<Integer> functionParam) {
-        int p = secret.getP();
+    private Integer getValue(int partPoint, Integer p, List<Integer> functionParam) {
         Integer result = 0;
         Integer pow = 1;
-        for (int i = 0; i < functionParam.size(); i++) {
+        for (int i = 1; i < functionParam.size(); i++) {
             pow = (pow * partPoint) % p;
-            result = ((result + ((functionParam.get(i) * pow) % p)) % p);
+            result = (result + functionParam.get(i) * pow) % p;
         }
-        result = ((result + secret.getSecret()) % p);
+        result = (result + functionParam.get(0)) % p;
         return result;
     }
 }

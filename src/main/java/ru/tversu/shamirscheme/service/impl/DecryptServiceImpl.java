@@ -18,6 +18,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static ru.tversu.shamirscheme.utils.Utils.getOpposite;
+import static ru.tversu.shamirscheme.utils.Utils.minusMod;
+
 @Slf4j
 @Service
 public class DecryptServiceImpl implements DecryptService {
@@ -50,7 +53,7 @@ public class DecryptServiceImpl implements DecryptService {
 
         Secret result = Secret
                 .builder()
-                .secret(polynomialCoefficients.get(0) % p)
+                .secret(polynomialCoefficients.get(0))
                 .p(p)
                 .build();
 
@@ -85,9 +88,9 @@ public class DecryptServiceImpl implements DecryptService {
         Integer denominator = 1;
         for (Integer point : points) {
             if (!Objects.equals(point, points.get(i))) {
-                denominator *= (points.get(i) - point);
-                numerator.set(0, numerator.get(0) * (-point));
-                numerator.set(2, numerator.get(2) - point);
+                denominator = (denominator * minusMod(points.get(i) - point, p)) % p;
+                numerator.set(0, numerator.get(0) * (minusMod(-point, p)));
+                numerator.set(2, minusMod(numerator.get(2) - point, p));
             }
         }
         switch (i) {
@@ -103,22 +106,10 @@ public class DecryptServiceImpl implements DecryptService {
         final Integer finalDenominator = getOpposite(denominator, p);
 
         numerator = numerator.stream()
-                .map(x -> ((((x % p) + p) % p) * finalDenominator) % p)
+                .map(x -> (minusMod(x, p) * finalDenominator) % p)
                 .collect(Collectors.toList());
 
         return numerator;
     }
-
-    private int getOpposite(int x, int p) {
-        int result = 0;
-        for (int i = 1; i > 0; i++) {
-            if (((x * i) % p) == 1) {
-                result = i;
-                break;
-            }
-        }
-        return result;
-    }
-
 
 }

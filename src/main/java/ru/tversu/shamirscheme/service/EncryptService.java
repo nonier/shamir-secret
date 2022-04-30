@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface EncryptService {
 
-    List<SecretPart> encrypt(Secret secret) throws Exception;
+    List<SecretPart> encrypt(Secret secret, Integer partsCount) throws Exception;
 
     List<SecretPart> generateNewParts(List<SecretPart> secretParts, Integer partsCount) throws Exception;
 }

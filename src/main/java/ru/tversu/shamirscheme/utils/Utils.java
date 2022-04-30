@@ -11,7 +11,18 @@ public class Utils {
         return true;
     }
 
-    public static int minusMod(int x, int p) {
+    public static int minusMod(Integer x, Integer p) {
         return (x % p + p) % p;
+    }
+
+    public static int getOpposite(int x, int p) {
+        int result = 0;
+        for (int i = 1; i > 0; i++) {
+            if (((x * i) % p) == 1) {
+                result = i;
+                break;
+            }
+        }
+        return result;
     }
 }
