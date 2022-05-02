@@ -42,6 +42,7 @@ public class FileManagerImpl implements FileManager {
     }
 
     @Override
+    @Deprecated
     public List<Integer> getSecretPartsPoints(Secret secret) {
         File secretPartsFolder = Path.of("src", "main", "resources", "secrets", secret.getSecret().toString(), "secretParts").toFile();
         List<Integer> result = new ArrayList<>();
