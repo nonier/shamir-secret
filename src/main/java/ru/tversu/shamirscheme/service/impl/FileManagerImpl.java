@@ -29,7 +29,7 @@ public class FileManagerImpl implements FileManager {
             FileWriter fileWriter = new FileWriter(secretFile);
             fileWriter.write(OBJECT_MAPPER.writeValueAsString(secret));
             fileWriter.close();
-            for (int i = 0; i < secretParts.size(); i++){
+            for (int i = 0; i < secretParts.size(); i++) {
                 File secretPartFile = Path.of(secretPartsSource.toString(), secretParts.get(i).hashCode() + ".json").toFile();
                 secretPartFile.createNewFile();
                 fileWriter = new FileWriter(secretPartFile);
@@ -45,18 +45,16 @@ public class FileManagerImpl implements FileManager {
     public List<Integer> getSecretPartsPoints(Secret secret) {
         File secretPartsFolder = Path.of("src", "main", "resources", "secrets", secret.getSecret().toString(), "secretParts").toFile();
         List<Integer> result = new ArrayList<>();
-        for(File secretPartFile : secretPartsFolder.listFiles()){
-            try(FileReader fileReader = new FileReader(secretPartFile);
-                BufferedReader bufferedReader = new BufferedReader(fileReader)){
-                String json = "";
+        for (File secretPartFile : secretPartsFolder.listFiles()) {
+            try (FileReader fileReader = new FileReader(secretPartFile);
+                 BufferedReader bufferedReader = new BufferedReader(fileReader)) {
+                StringBuilder json = new StringBuilder();
                 String line;
-                while ((line = bufferedReader.readLine()) != null){
-                    json +=line;
+                while ((line = bufferedReader.readLine()) != null) {
+                    json.append(line);
                 }
-                SecretPart secretPart = OBJECT_MAPPER.readValue(json, SecretPart.class);
+                SecretPart secretPart = OBJECT_MAPPER.readValue(json.toString(), SecretPart.class);
                 result.add(secretPart.getPoint());
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }

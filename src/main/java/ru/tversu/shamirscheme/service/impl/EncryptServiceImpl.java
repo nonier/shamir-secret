@@ -3,6 +3,7 @@ package ru.tversu.shamirscheme.service.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.tversu.shamirscheme.exception.BadKeyFormatException;
 import ru.tversu.shamirscheme.exception.NotSimpleDigitException;
 import ru.tversu.shamirscheme.exception.SecretAlreadyExistsException;
 import ru.tversu.shamirscheme.model.Secret;
@@ -38,7 +39,7 @@ public class EncryptServiceImpl implements EncryptService {
         log.debug("Попытка зашифровать секрет: {}", secret);
 
         if (secret.getSecret() >= secret.getP()) {
-            throw new Exception("Неправильный формат ключа, параметр p должен быть больше secret");
+            throw new BadKeyFormatException("Неправильный формат ключа, параметр p должен быть больше secret");
         }
         if (!Utils.isSimple(secret.getP())) {
             throw new NotSimpleDigitException("Параметр p не является простым числом");

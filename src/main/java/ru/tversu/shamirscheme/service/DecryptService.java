@@ -9,6 +9,6 @@ public interface DecryptService {
 
     Secret decrypt(List<SecretPart> secretParts) throws Exception;
 
-    public List<Integer> recoverPolynomialCoefficients(List<SecretPart> secretParts);
+    List<Integer> recoverPolynomialCoefficients(List<SecretPart> secretParts);
 
 }

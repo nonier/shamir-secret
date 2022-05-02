@@ -9,7 +9,6 @@ public interface FileManager {
 
     void writeSecret(Secret secret, List<SecretPart> secretParts);
 
-
     List<Integer> getSecretPartsPoints(Secret secret);
 
     boolean checkIfSecretExists(Secret result);
