@@ -14,13 +14,13 @@ import ru.tversu.shamirscheme.service.FileManager;
 import ru.tversu.shamirscheme.utils.Utils;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 @Service
 @Slf4j
 public class EncryptServiceImpl implements EncryptService {
 
     public static final Integer K = 4;
+    public static final Integer RANDOM_GEN_BOUND = 1000;
 
     public static final Random GENERATOR = new Random();
 
@@ -68,9 +68,9 @@ public class EncryptServiceImpl implements EncryptService {
 
         if (polynomialCoffs.size() == 1) {
             for (int i = 0; i < K - 1; i++) {
-                int param = GENERATOR.nextInt(1000) % p;
+                int param = GENERATOR.nextInt(RANDOM_GEN_BOUND) % p;
                 while (param == 0) {
-                    param = GENERATOR.nextInt(1000) % p;
+                    param = GENERATOR.nextInt(RANDOM_GEN_BOUND) % p;
                 }
                 polynomialCoffs.add(param);
             }
@@ -80,11 +80,11 @@ public class EncryptServiceImpl implements EncryptService {
         List<Integer> partPoints = new ArrayList<>();
 
         for (int i = 0; i < partsCount; i++) {
-            int partPoint = GENERATOR.nextInt(1000) % p;
+            int partPoint = GENERATOR.nextInt(RANDOM_GEN_BOUND) % p;
             while (partPoints.contains(partPoint) ||
                     points.contains(partPoint) ||
                     partPoint == 0) {
-                partPoint = GENERATOR.nextInt(1000) % p;
+                partPoint = GENERATOR.nextInt(RANDOM_GEN_BOUND) % p;
             }
             partPoints.add(partPoint);
         }
