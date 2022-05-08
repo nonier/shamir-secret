@@ -37,7 +37,16 @@ public class EncryptServiceImpl implements EncryptService {
     @Override
     public List<SecretPart> encrypt(Secret secret, Integer partsCount) throws Exception {
         log.debug("Попытка зашифровать секрет: {}", secret);
-
+        Integer p = secret.getP();
+        if (p == null) {
+            while (true) {
+                p = GENERATOR.nextInt(RANDOM_GEN_BOUND) + secret.getSecret() + 1;
+                if (Utils.isSimple(p)) {
+                    break;
+                }
+            }
+        }
+        secret.setP(p);
         if (secret.getSecret() >= secret.getP()) {
             throw new BadKeyFormatException("Неправильный формат ключа, параметр p должен быть больше secret");
         }
@@ -76,6 +85,48 @@ public class EncryptServiceImpl implements EncryptService {
             }
         }
         log.debug("Сгенерированы коэффициенты полинома: {}", polynomialCoffs);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         List<Integer> partPoints = new ArrayList<>();
 
